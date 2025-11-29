@@ -1,0 +1,21 @@
+# Standard Go build cache and module files
+# The build cache
+.cache/
+# Dependencies (managed by go mod)
+
+vendor/
+# Test results and temporary files
+*.test
+*.out
+
+# Visual Studio Code
+.vscode/
+
+# Runtime and Logging files
+proxy.log 
+
+# The nohup log file 
+nohup.out 
+
+# Any backup or temporary files created by editors
+*~
