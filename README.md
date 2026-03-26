@@ -1,16 +1,16 @@
 # Portable SOCKS5 Proxy (No Root Required)
 
-This project provides a lightweight, portable SOCKS5 proxy server written in Go. It is designed specifically for **VPS or servers where you do not have root (administrator) access**.
+A lightweight SOCKS5 proxy written in Go. Designed for VPS or servers where you don't have root access.
 
-Since installing software packages on restricted servers can be tricky or impossible without root privileges, this solution compiles into a single binary file that you can just copy and run. It includes a helper script and cron job instructions to ensure the proxy stays running and restarts automatically if the server reboots.
+Since you can't install packages on restricted servers, this compiles to a single binary you can copy and run. Includes a helper script and cron instructions to keep the proxy running after reboots.
 
 ## Features
 
-- **No Root Access Needed**: runs entirely in user space.
-- **Portable**: Compiled as a single static binary.
-- **Persistent**: Includes a shell script to auto-restart the proxy if it crashes.
-- **Auto-Start**: Instructions for `cron` to start the proxy on server reboot.
-- **Hardcoded Security**: Username and password are compiled into the binary for simplicity (no config files to manage).
+- No root access needed — runs in user space
+- Single static binary — just copy and run
+- Auto-restart script — keeps the proxy up if it crashes
+- Cron auto-start — starts on server reboot
+- Hardcoded credentials — username and password compiled in (no config files)
 
 ---
 
