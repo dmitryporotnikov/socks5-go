@@ -1,138 +1,67 @@
-# Portable SOCKS5 Proxy (No Root Required)
+# Portable SOCKS5 proxy, no root
 
-A lightweight SOCKS5 proxy written in Go. Designed for VPS or servers where you don't have root access.
+[![Go 1.26](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](go.mod)
+[![No root](https://img.shields.io/badge/root-not%20required-green)](#)
+[![Linux](https://img.shields.io/badge/platform-linux-lightgrey)](linux-no-root-persistence)
 
-Since you can't install packages on restricted servers, this compiles to a single binary you can copy and run. Includes a helper script and cron instructions to keep the proxy running after reboots.
+A SOCKS5 proxy written in one Go file, for the VPS where you have a login and no sudo. Build the binary on your own machine, copy it across, and it runs out of your home directory. No packages to install on the server, no service manager to fight.
 
-## Features
+Credentials are compiled into the binary. That's the whole configuration story, so treat this as a personal tunnel and not as shared infrastructure.
 
-- No root access needed — runs in user space
-- Single static binary — just copy and run
-- Auto-restart script — keeps the proxy up if it crashes
-- Cron auto-start — starts on server reboot
-- Hardcoded credentials — username and password compiled in (no config files)
+## Build
 
----
+Open `main.go`, set the two constants near the top:
 
-## 1. Configuration
+```go
+const requiredUser = "dmitry"
+const requiredPass = "<SECRET_PASSWORD>"
+```
 
-Before compiling, you need to set your desired username and password directly in the source code.
+The listener is `0.0.0.0:40048`; change `listenAddr` if that port is taken. Build for the server from any OS:
 
-1. Open `main.go` in a text editor.
-2. Look for the Credentials section:
-   ```go
-   const requiredUser = "dmitry"
-   const requiredPass = "<SECRET_PASSWORD>"
-   ```
-3. Change `"dmitry"` and `"<SECRET_PASSWORD>"` to your preferred username and password.
-4. (Optional) The server listens on port `40048` by default. You can change `listenAddr` in `main.go` if you need a different port.
-
----
-
-## 2. Compilation
-
-You need to compile the Go program into a binary that can run on Linux. You can do this from your local machine (Windows, Mac, or Linux).
-
-**Prerequisite**: Make sure you have [Go installed](https://go.dev/dl/).
-
-Open your terminal or command prompt in the project directory and run:
-
-### For Linux/Mac Users:
 ```bash
 GOOS=linux GOARCH=amd64 go build -o proxy-linux main.go
 ```
 
-### For Windows Users (PowerShell):
-```powershell
-$env:GOOS="linux"
-$env:GOARCH="amd64"
-go build -o proxy-linux main.go
-```
-
-This will create a file named `proxy-linux`. This is your executable program.
-
----
-
-## 3. Installation on the Server
-
-Now you need to move the files to your remote server. We will assume you are using a directory named `proxy` in your home folder.
-
-### Step 3.1: Create the directory
-SSH into your server and create the folder:
-```bash
-ssh user@your-server-ip
-mkdir -p ~/proxy
-exit
-```
-
-### Step 3.2: Copy files using SCP
-From your local machine, run the following commands to copy the binary and the script. Replace `user@your-server-ip` with your actual server login.
+## Put it on the server
 
 ```bash
-# Copy the compiled binary
+ssh user@your-server-ip "mkdir -p ~/proxy"
 scp proxy-linux user@your-server-ip:~/proxy/
-
-# Copy the persistence script
 scp linux-no-root-persistence/run_proxy.sh user@your-server-ip:~/proxy/
 ```
 
----
-
-## 4. Setup Persistence
-
-Now, go back to your server to finish the setup.
+Then, on the server:
 
 ```bash
-ssh user@your-server-ip
 cd ~/proxy
-```
-
-### Step 4.1: Make files executable
-```bash
-chmod +x proxy-linux
-chmod +x run_proxy.sh
-```
-
-### Step 4.2: Setup Cron (Auto-start)
-We will use `cron` to make sure the proxy starts when the server reboots.
-
-1. Find out your current path and username. Run `pwd`. It should look like `/home/yourusername/proxy`.
-2. Open your crontab:
-   ```bash
-   crontab -e
-   ```
-3. Add the following line to the end of the file. **Important**: Replace `<username>` with your actual username found in step 1.
-
-   ```cron
-   @reboot /bin/sleep 300 && /usr/bin/nohup /home/<username>/proxy/run_proxy.sh > /dev/null 2>&1 &
-   ```
-   *(The `sleep 300` waits for 5 minutes after reboot to ensure the network is ready before starting.)*
-
-4. Save and exit the editor.
-
-### Step 4.3: Start it now
-You don't need to reboot to start it the first time. Just run:
-```bash
+chmod +x proxy-linux run_proxy.sh
 nohup ./run_proxy.sh > /dev/null 2>&1 &
 ```
 
----
+`run_proxy.sh` keeps the proxy alive: if the binary exits, it logs the code and starts it again after 10 seconds.
 
-## 5. Verification
+## Start it on boot
 
-To check if the proxy is running, you can look for the process:
+`crontab -e`, then add a line with the path from `pwd`:
+
+```cron
+@reboot /bin/sleep 300 && /usr/bin/nohup /home/<username>/proxy/run_proxy.sh > /dev/null 2>&1 &
+```
+
+The 300 second sleep gives the network time to come up before the proxy starts.
+
+## Check it
 
 ```bash
 ps aux | grep proxy-linux
-```
-
-You can also check the log file created in the directory:
-```bash
 tail -f ~/proxy/proxy.log
 ```
 
-You can now configure your browser or other applications to use your SOCKS5 proxy:
-- **IP**: Your server's public IP
-- **Port**: `40048` (or whatever you set)
-- **User**: (Set in Step 1)
-- **Pass**: (Set in Step 1)
+Point the client at the server's public IP, port `40048`, with the username and password from `main.go`.
+
+## Two things to know
+
+The password sits in the binary as a string constant, so anyone who gets a copy of the file can pull it out. The proxy also adds no encryption of its own: whatever the client puts through it is protected only by the protocol being carried.
+
+There's no license file in this repo yet, so treat the code as all rights reserved.
